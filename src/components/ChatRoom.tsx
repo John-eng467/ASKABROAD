@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, Users, Crown, Globe, MessageSquare, FileText, AlertCircle, Reply, X, Sparkles } from 'lucide-react';
+import { Send, ArrowLeft, Users, Crown, Globe, MessageSquare, AlertCircle, Reply, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ref, push, onValue, query, orderByChild, startAt, set, remove, onDisconnect } from 'firebase/database';
 import { database } from '../config/firebase';
@@ -15,7 +15,6 @@ const ChatRoom: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [onlineUsers, setOnlineUsers] = useState<RoomUser[]>([]);
-  const [activeRoom, setActiveRoom] = useState<'general' | 'visa'>('general');
   const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
@@ -26,7 +25,9 @@ const ChatRoom: React.FC = () => {
   useEffect(() => {
     if (!currentUser || !countryCode || !category) return;
 
-    const roomId = `${countryCode}-${category}-${activeRoom}`;
+    // For visa category, use 'visa' as the room type
+    const roomType = category === 'visa' ? 'visa' : 'general';
+    const roomId = `${countryCode}-${category}-${roomType}`;
 
     // Add user to room presence
     const userPresenceRef = ref(database, `rooms/${roomId}/users/${currentUser.uid}`);
@@ -55,7 +56,7 @@ const ChatRoom: React.FC = () => {
     });
 
     // Listen for Firebase messages (only non-expired ones)
-    const messagesRef = ref(database, `messages/${countryCode}/${category}/${activeRoom}`);
+    const messagesRef = ref(database, `messages/${countryCode}/${category}/${roomType}`);
     const now = new Date().toISOString();
     const validMessagesQuery = query(messagesRef, orderByChild('expiresAt'), startAt(now));
 
@@ -78,7 +79,7 @@ const ChatRoom: React.FC = () => {
       // Remove user from room when component unmounts
       remove(userPresenceRef);
     };
-  }, [currentUser, countryCode, category, activeRoom]);
+  }, [currentUser, countryCode, category]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -113,6 +114,7 @@ const ChatRoom: React.FC = () => {
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours from now
+    const roomType = category === 'visa' ? 'visa' : 'general';
 
     const message: Omit<Message, 'id'> = {
       senderId: currentUser.uid,
@@ -121,8 +123,8 @@ const ChatRoom: React.FC = () => {
       content: newMessage.trim(),
       timestamp: now.toISOString(),
       country: countryCode,
-      category: category as 'study' | 'travel',
-      roomType: activeRoom,
+      category: category as 'study' | 'travel' | 'visa',
+      roomType: roomType,
       expiresAt: expiresAt.toISOString(),
       ...(replyingTo && {
         replyTo: {
@@ -138,11 +140,17 @@ const ChatRoom: React.FC = () => {
     try {
       if (currentUser.isGuest) {
         // For guest users, store message with guest ID
-        await push(ref(database, `messages/${countryCode}/${category}/${activeRoom}`), message);
+        await push(ref(database, `messages/${countryCode}/${category}/${roomType}`), message);
         await incrementGuestMessageCount();
+        
+        // Check if this was the last message for guest
+        const updatedMessageCount = (currentUser.messageCount || 0) + 1;
+        if (updatedMessageCount >= 5) {
+          setShowGuestLimitModal(true);
+        }
       } else {
         // For authenticated users
-        await push(ref(database, `messages/${countryCode}/${category}/${activeRoom}`), message);
+        await push(ref(database, `messages/${countryCode}/${category}/${roomType}`), message);
       }
 
       setNewMessage('');
@@ -177,7 +185,7 @@ const ChatRoom: React.FC = () => {
 
   const getUserTypeIcon = (userType: string) => {
     switch (userType) {
-      case 'Industry Expert':
+      case 'consultant':
         return <Crown className="h-4 w-4 text-purple-400" />;
       case 'resident':
         return <Globe className="h-4 w-4 text-green-400" />;
@@ -190,7 +198,7 @@ const ChatRoom: React.FC = () => {
 
   const getUserTypeColor = (userType: string) => {
     switch (userType) {
-      case 'Industry Expert':
+      case 'consultant':
         return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
       case 'resident':
         return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white';
@@ -198,6 +206,19 @@ const ChatRoom: React.FC = () => {
         return 'bg-gradient-to-r from-orange-500 to-red-500 text-white';
       default:
         return 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white';
+    }
+  };
+
+  const getUserTypeDisplayName = (userType: string) => {
+    switch (userType) {
+      case 'consultant':
+        return 'Industry Expert';
+      case 'resident':
+        return 'Resident';
+      case 'guest':
+        return 'Guest';
+      default:
+        return 'User';
     }
   };
 
@@ -209,12 +230,19 @@ const ChatRoom: React.FC = () => {
         description: country?.studyDescription || country?.description,
         gradient: 'from-blue-500 via-blue-600 to-indigo-600'
       };
-    } else {
+    } else if (category === 'travel') {
       return {
         title: 'Travel Chat',
         icon: '✈️',
         description: country?.travelDescription || country?.description,
         gradient: 'from-green-500 via-emerald-600 to-teal-600'
+      };
+    } else {
+      return {
+        title: 'Visa Guidance Chat',
+        icon: '📋',
+        description: country?.visaDescription || 'Expert visa guidance and immigration support',
+        gradient: 'from-purple-500 via-purple-600 to-pink-600'
       };
     }
   };
@@ -304,30 +332,6 @@ const ChatRoom: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Room Tabs */}
-            <div className="flex space-x-2 mt-6 bg-white/10 rounded-xl p-2">
-              <button
-                onClick={() => setActiveRoom('general')}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${activeRoom === 'general'
-                  ? 'bg-white/20 text-white shadow-lg'
-                  : 'text-blue-200 hover:text-white hover:bg-white/10'
-                  }`}
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span>General Discussion</span>
-              </button>
-              <button
-                onClick={() => setActiveRoom('visa')}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${activeRoom === 'visa'
-                  ? 'bg-white/20 text-white shadow-lg'
-                  : 'text-blue-200 hover:text-white hover:bg-white/10'
-                  }`}
-              >
-                <FileText className="h-4 w-4" />
-                <span>Visa Guidance</span>
-              </button>
-            </div>
           </div>
 
           {/* Messages */}
@@ -335,16 +339,18 @@ const ChatRoom: React.FC = () => {
             {messages.length === 0 ? (
               <div className="text-center text-blue-200 py-12">
                 <div className="text-6xl mb-6">
-                  {activeRoom === 'general' ? '💬' : '📋'}
+                  {categoryInfo.icon}
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-md mx-auto">
                   <p className="text-xl font-medium mb-3 text-white">
-                    {activeRoom === 'general' ? 'Start the conversation!' : 'Ask your visa questions!'}
+                    Start the conversation!
                   </p>
                   <p className="text-sm text-blue-200">
-                    {activeRoom === 'general'
-                      ? 'Share experiences, ask questions, and connect with others interested in ' + country.name
-                      : 'Get expert guidance on visa requirements, application processes, and documentation for ' + country.name
+                    {category === 'visa'
+                      ? 'Get expert guidance on visa requirements, application processes, and documentation for ' + country.name
+                      : category === 'study'
+                      ? 'Share experiences, ask questions, and connect with others interested in studying in ' + country.name
+                      : 'Share experiences, ask questions, and connect with others interested in ' + country.name
                     }
                   </p>
                 </div>
@@ -382,7 +388,7 @@ const ChatRoom: React.FC = () => {
                                 {message.senderName}
                               </span>
                               <span className={`px-3 py-1 text-xs font-medium rounded-full ${getUserTypeColor(message.senderType)}`}>
-                                {message.senderType.charAt(0).toUpperCase() + message.senderType.slice(1)}
+                                {getUserTypeDisplayName(message.senderType)}
                               </span>
                             </div>
                           )}
@@ -480,7 +486,7 @@ const ChatRoom: React.FC = () => {
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder={`${replyingTo ? 'Reply to message...' : `Type your message in ${activeRoom === 'general' ? 'general discussion' : 'visa guidance'}...`}`}
+                placeholder={`${replyingTo ? 'Reply to message...' : `Type your message in ${categoryInfo.title.toLowerCase()}...`}`}
                 className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
                 disabled={currentUser?.isGuest && guestMessageCount >= 5}
               />
@@ -527,7 +533,7 @@ const ChatRoom: React.FC = () => {
                 <div className="flex-1 min-w-0">
                   <span className="text-sm text-white font-medium truncate block">{user.displayName}</span>
                   <span className={`text-xs px-2 py-1 rounded-full ${getUserTypeColor(user.userType)}`}>
-                    {user.userType}
+                    {getUserTypeDisplayName(user.userType)}
                   </span>
                 </div>
               </div>

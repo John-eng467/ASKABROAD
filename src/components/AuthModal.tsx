@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Eye, EyeOff, User, Phone, MessageCircle, UserX, Users } from 'lucide-react';
+import { X, Eye, EyeOff, User, Phone, MessageCircle, UserX, Users, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 // Type declarations for Google Identity Services
@@ -34,7 +34,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     password: '',
     displayName: '',
     mobileNumber: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    guestEmail: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -72,10 +73,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     try {
       if (authType === 'guest') {
-        if (!formData.displayName.trim()) {
-          throw new Error('Please enter your name');
+        if (!formData.displayName.trim() || !formData.guestEmail.trim()) {
+          throw new Error('Please enter your name and email');
         }
-        await loginAsGuest(formData.displayName.trim());
+        await loginAsGuest(formData.displayName.trim(), formData.guestEmail.trim());
       } else if (authType === 'login') {
         await login(formData.email, formData.password, 'user');
       } else if (authType === 'signup') {
@@ -116,7 +117,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       password: '',
       displayName: '',
       mobileNumber: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      guestEmail: ''
     });
     setUserType('user');
   };
@@ -286,6 +288,27 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                     placeholder="Enter your name"
                   />
+                </div>
+
+                {/* Guest Email */}
+                <div>
+                  <label htmlFor="guestEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="email"
+                      id="guestEmail"
+                      required
+                      value={formData.guestEmail}
+                      onChange={(e) => setFormData({ ...formData, guestEmail: e.target.value })}
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Enter your email"
+                    />
+                  </div>
                 </div>
 
                 {/* Submit Button */}

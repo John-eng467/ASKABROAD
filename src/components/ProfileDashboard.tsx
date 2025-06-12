@@ -12,7 +12,7 @@ const ProfileDashboard: React.FC = () => {
 
   const getUserTypeIcon = (userType: string) => {
     switch (userType) {
-      case 'Industry Expert':
+      case 'consultant':
         return <Crown className="h-8 w-8 text-purple-400" />;
       case 'resident':
         return <Globe className="h-8 w-8 text-green-400" />;
@@ -25,7 +25,7 @@ const ProfileDashboard: React.FC = () => {
 
   const getUserTypeColor = (userType: string) => {
     switch (userType) {
-      case 'Industry Expert':
+      case 'consultant':
         return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
       case 'resident':
         return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white';
@@ -38,7 +38,7 @@ const ProfileDashboard: React.FC = () => {
 
   const getUserTypeGradient = (userType: string) => {
     switch (userType) {
-      case 'Industry Expert':
+      case 'consultant':
         return 'from-purple-600 via-purple-700 to-pink-600';
       case 'resident':
         return 'from-green-600 via-emerald-700 to-teal-600';
@@ -46,6 +46,19 @@ const ProfileDashboard: React.FC = () => {
         return 'from-orange-600 via-red-700 to-pink-600';
       default:
         return 'from-blue-600 via-indigo-700 to-purple-600';
+    }
+  };
+
+  const getUserTypeDisplayName = (userType: string) => {
+    switch (userType) {
+      case 'consultant':
+        return 'Industry Expert';
+      case 'resident':
+        return 'Resident';
+      case 'guest':
+        return 'Guest';
+      default:
+        return 'User';
     }
   };
 
@@ -78,7 +91,7 @@ const ProfileDashboard: React.FC = () => {
                 <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${getUserTypeColor(currentUser.userType)} shadow-lg`}>
                   {getUserTypeIcon(currentUser.userType)}
                   <span className="font-medium">
-                    {currentUser.userType.charAt(0).toUpperCase() + currentUser.userType.slice(1)}
+                    {getUserTypeDisplayName(currentUser.userType)}
                   </span>
                 </div>
               </div>
@@ -100,7 +113,7 @@ const ProfileDashboard: React.FC = () => {
                     <div className="flex items-center justify-between py-3 border-b border-white/10">
                       <span className="text-sm font-medium text-blue-200">User Type</span>
                       <span className={`px-4 py-2 text-sm font-medium rounded-full ${getUserTypeColor(currentUser.userType)} shadow-lg`}>
-                        {currentUser.userType.charAt(0).toUpperCase() + currentUser.userType.slice(1)}
+                        {getUserTypeDisplayName(currentUser.userType)}
                       </span>
                     </div>
                     
@@ -155,7 +168,7 @@ const ProfileDashboard: React.FC = () => {
             <div className="mt-12">
               <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
                 <Award className="h-6 w-6 mr-2 text-yellow-400" />
-                {currentUser.userType === 'consultant' ? 'Consultant Information' : 
+                {currentUser.userType === 'consultant' ? 'Industry Expert Information' : 
                  currentUser.userType === 'resident' ? 'Resident Information' : 
                  currentUser.userType === 'guest' ? 'Guest Information' : 'User Information'}
               </h2>

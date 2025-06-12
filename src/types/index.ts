@@ -6,7 +6,7 @@ export interface User {
   userType: 'user' | 'consultant' | 'resident' | 'guest';
   country?: string;
   reasonForJoining?: string;
-  selectedCategory?: 'study' | 'travel';
+  selectedCategory?: 'study' | 'travel' | 'visa';
   createdAt: string;
   messageCount?: number; // For guest users
   isGuest?: boolean;
@@ -20,7 +20,7 @@ export interface Message {
   content: string;
   timestamp: string;
   country: string;
-  category: 'study' | 'travel';
+  category: 'study' | 'travel' | 'visa';
   roomType: 'general' | 'visa';
   expiresAt: string;
   replyTo?: {
@@ -37,6 +37,7 @@ export interface Country {
   description: string;
   studyDescription: string;
   travelDescription: string;
+  visaDescription?: string;
   popular: boolean;
 }
 

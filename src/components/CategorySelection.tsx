@@ -1,10 +1,10 @@
 import React from 'react';
-import { GraduationCap, Plane, ArrowRight, BookOpen, MapPin, MessageCircle, Users, Globe } from 'lucide-react';
+import { GraduationCap, Plane, ArrowRight, BookOpen, MapPin, MessageCircle, Users, Globe, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from './Navbar';
 
 interface CategorySelectionProps {
-  onCategorySelect: (category: 'study' | 'travel') => void;
+  onCategorySelect: (category: 'study' | 'travel' | 'visa') => void;
 }
 
 const CategorySelection: React.FC<CategorySelectionProps> = ({ onCategorySelect }) => {
@@ -46,6 +46,24 @@ const CategorySelection: React.FC<CategorySelectionProps> = ({ onCategorySelect 
       borderGradient: 'from-green-200 to-teal-200',
       chatRooms: '120+ Active Chat Rooms',
       experts: '180+ Travel Experts'
+    },
+    {
+      id: 'visa' as const,
+      title: 'Visa Guidance',
+      description: 'Get expert assistance with visa applications, documentation, and immigration processes for any country',
+      icon: <FileText className="h-16 w-16" />,
+      features: [
+        'Visa application guidance',
+        'Document preparation help',
+        'Immigration process support',
+        'Country-specific requirements',
+        'Expert consultation'
+      ],
+      gradient: 'from-purple-500 via-purple-600 to-pink-600',
+      bgGradient: 'from-purple-50 via-purple-100 to-pink-100',
+      borderGradient: 'from-purple-200 to-pink-200',
+      chatRooms: '80+ Active Chat Rooms',
+      experts: '150+ Visa Experts'
     }
   ];
 
@@ -81,7 +99,7 @@ const CategorySelection: React.FC<CategorySelectionProps> = ({ onCategorySelect 
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto mb-16">
+        <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto mb-16">
           {categories.map((category) => (
             <div
               key={category.id}
@@ -132,8 +150,10 @@ const CategorySelection: React.FC<CategorySelectionProps> = ({ onCategorySelect 
                 <div className={`flex items-center justify-center space-x-3 text-white bg-gradient-to-r ${category.gradient} rounded-xl py-4 px-6 group-hover:shadow-lg transition-all duration-300`}>
                   {category.id === 'study' ? (
                     <BookOpen className="h-6 w-6" />
-                  ) : (
+                  ) : category.id === 'travel' ? (
                     <MapPin className="h-6 w-6" />
+                  ) : (
+                    <FileText className="h-6 w-6" />
                   )}
                   <span className="font-semibold text-lg">Join {category.title} Chats</span>
                   <ArrowRight className="h-5 w-5 transform group-hover:translate-x-1 transition-transform duration-200" />
@@ -156,7 +176,7 @@ const CategorySelection: React.FC<CategorySelectionProps> = ({ onCategorySelect 
               Not sure which category fits you?
             </h3>
             <p className="text-blue-100 mb-8 text-lg leading-relaxed">
-              You can always switch between categories later. Both sections have dedicated chat rooms with experts ready to help you achieve your international goals through real-time conversations.
+              You can always switch between categories later. All sections have dedicated chat rooms with experts ready to help you achieve your international goals through real-time conversations.
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">

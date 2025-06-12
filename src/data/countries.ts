@@ -9,6 +9,7 @@ export const countries: Country[] = [
     description: 'World-class universities and diverse opportunities',
     studyDescription: 'Home to Ivy League universities and cutting-edge research facilities',
     travelDescription: 'From NYC to California, experience diverse landscapes and cultures',
+    visaDescription: 'F-1 student visas, H-1B work visas, and immigration guidance',
     popular: true
   },
   {
@@ -18,6 +19,7 @@ export const countries: Country[] = [
     description: 'Historic universities and rich cultural heritage',
     studyDescription: 'Oxford, Cambridge, and world-renowned institutions',
     travelDescription: 'Historic castles, vibrant cities, and countryside charm',
+    visaDescription: 'Student visas, work permits, and post-study work opportunities',
     popular: true
   },
   {
@@ -27,6 +29,7 @@ export const countries: Country[] = [
     description: 'Quality education and welcoming immigration policies',
     studyDescription: 'Affordable education with post-graduation work opportunities',
     travelDescription: 'Natural wonders, friendly locals, and multicultural cities',
+    visaDescription: 'Study permits, work permits, and permanent residence pathways',
     popular: true
   },
   {
@@ -36,6 +39,7 @@ export const countries: Country[] = [
     description: 'High-quality education and unique lifestyle',
     studyDescription: 'Group of Eight universities and research excellence',
     travelDescription: 'Unique wildlife, stunning beaches, and adventure sports',
+    visaDescription: 'Student visas, skilled migration, and working holiday visas',
     popular: true
   },
   {
@@ -45,6 +49,7 @@ export const countries: Country[] = [
     description: 'Engineering excellence and tuition-free education',
     studyDescription: 'World-class engineering and research programs',
     travelDescription: 'Rich history, beautiful architecture, and Oktoberfest',
+    visaDescription: 'Student visas, EU Blue Card, and job seeker visas',
     popular: true
   },
   {
@@ -54,6 +59,7 @@ export const countries: Country[] = [
     description: 'Art, culture, and prestigious institutions',
     studyDescription: 'Sorbonne and other prestigious universities',
     travelDescription: 'Art, cuisine, fashion, and romantic destinations',
+    visaDescription: 'Student visas, work permits, and EU residence cards',
     popular: true
   },
   {
@@ -63,6 +69,7 @@ export const countries: Country[] = [
     description: 'Innovation hub with English-taught programs',
     studyDescription: 'High-quality education with many English programs',
     travelDescription: 'Canals, tulips, museums, and liberal culture',
+    visaDescription: 'Student residence permits and highly skilled migrant visas',
     popular: true
   },
   {
@@ -72,6 +79,7 @@ export const countries: Country[] = [
     description: 'Gateway to Asia with world-class education',
     studyDescription: 'NUS, NTU and excellent business programs',
     travelDescription: 'Modern city-state with diverse food and culture',
+    visaDescription: 'Student passes, employment passes, and permanent residence',
     popular: true
   },
   {
@@ -81,6 +89,7 @@ export const countries: Country[] = [
     description: 'Premium education and stunning landscapes',
     studyDescription: 'ETH Zurich and hospitality management schools',
     travelDescription: 'Alps, luxury, precision, and outdoor adventures',
+    visaDescription: 'Student permits, work permits, and residence applications',
     popular: true
   },
   {
@@ -90,6 +99,7 @@ export const countries: Country[] = [
     description: 'Innovation and sustainability focus',
     studyDescription: 'KTH, Lund University, and tech innovation',
     travelDescription: 'Northern lights, design, and sustainable living',
+    visaDescription: 'Student residence permits and work permits',
     popular: true
   },
   {
@@ -99,6 +109,7 @@ export const countries: Country[] = [
     description: 'Adventure and quality education',
     studyDescription: 'University of Auckland and research opportunities',
     travelDescription: 'Lord of the Rings landscapes and adventure sports',
+    visaDescription: 'Student visas, work visas, and skilled migrant category',
     popular: false
   },
   {
@@ -108,6 +119,7 @@ export const countries: Country[] = [
     description: 'Free education and natural beauty',
     studyDescription: 'University of Oslo and free higher education',
     travelDescription: 'Fjords, northern lights, and Viking heritage',
+    visaDescription: 'Student residence permits and skilled worker visas',
     popular: false
   },
   {
@@ -117,6 +129,7 @@ export const countries: Country[] = [
     description: 'Hygge lifestyle and quality education',
     studyDescription: 'University of Copenhagen and design programs',
     travelDescription: 'Copenhagen, LEGO, and Scandinavian design',
+    visaDescription: 'Student residence permits and Green Card scheme',
     popular: false
   },
   {
@@ -126,6 +139,7 @@ export const countries: Country[] = [
     description: 'Education excellence and innovation',
     studyDescription: 'University of Helsinki and tech education',
     travelDescription: 'Lapland, saunas, and northern wilderness',
+    visaDescription: 'Student residence permits and specialist visas',
     popular: false
   },
   {
@@ -135,6 +149,7 @@ export const countries: Country[] = [
     description: 'Music, culture, and Alpine beauty',
     studyDescription: 'University of Vienna and music conservatories',
     travelDescription: 'Mozart, Alps, and classical architecture',
+    visaDescription: 'Student visas and Red-White-Red Card',
     popular: false
   },
   {
@@ -144,6 +159,7 @@ export const countries: Country[] = [
     description: 'EU headquarters and chocolate',
     studyDescription: 'KU Leuven and European studies',
     travelDescription: 'Brussels, Bruges, waffles, and beer',
+    visaDescription: 'Student visas and EU Blue Card applications',
     popular: false
   },
   {
@@ -153,6 +169,7 @@ export const countries: Country[] = [
     description: 'Friendly culture and tech hub',
     studyDescription: 'Trinity College Dublin and tech programs',
     travelDescription: 'Green landscapes, pubs, and Celtic culture',
+    visaDescription: 'Student visas, work permits, and critical skills permits',
     popular: false
   },
   {
@@ -162,6 +179,7 @@ export const countries: Country[] = [
     description: 'Art, history, and culinary excellence',
     studyDescription: 'Bocconi University and art programs',
     travelDescription: 'Rome, Venice, art, and incredible cuisine',
+    visaDescription: 'Student visas, work permits, and EU residence cards',
     popular: false
   },
   {
@@ -171,6 +189,7 @@ export const countries: Country[] = [
     description: 'Vibrant culture and affordable living',
     studyDescription: 'IE Business School and language programs',
     travelDescription: 'Flamenco, beaches, architecture, and festivals',
+    visaDescription: 'Student visas, work permits, and residence applications',
     popular: false
   },
   {
@@ -180,6 +199,7 @@ export const countries: Country[] = [
     description: 'Affordable Europe with great weather',
     studyDescription: 'University of Porto and emerging tech scene',
     travelDescription: 'Lisbon, Porto, beaches, and affordable living',
+    visaDescription: 'Student visas, work visas, and Golden Visa program',
     popular: false
   },
   {
@@ -189,6 +209,7 @@ export const countries: Country[] = [
     description: 'Technology innovation and rich culture',
     studyDescription: 'University of Tokyo and technology programs',
     travelDescription: 'Tokyo, Kyoto, technology, and traditional culture',
+    visaDescription: 'Student visas, work visas, and skilled worker categories',
     popular: false
   },
   {
@@ -198,6 +219,7 @@ export const countries: Country[] = [
     description: 'K-culture and technological advancement',
     studyDescription: 'Seoul National University and tech innovation',
     travelDescription: 'Seoul, K-pop, technology, and Korean culture',
+    visaDescription: 'Student visas, work visas, and points-based system',
     popular: false
   },
   {
@@ -207,6 +229,7 @@ export const countries: Country[] = [
     description: 'Ancient culture meets modern innovation',
     studyDescription: 'Tsinghua University and business programs',
     travelDescription: 'Great Wall, modern cities, and rich history',
+    visaDescription: 'Student visas, work permits, and residence permits',
     popular: false
   },
   {
@@ -216,6 +239,7 @@ export const countries: Country[] = [
     description: 'East meets West financial hub',
     studyDescription: 'HKU and international business programs',
     travelDescription: 'Skyline, dim sum, and cultural fusion',
+    visaDescription: 'Student visas, work visas, and investment schemes',
     popular: false
   },
   {
@@ -225,6 +249,7 @@ export const countries: Country[] = [
     description: 'Multicultural hub in Southeast Asia',
     studyDescription: 'University of Malaya and affordable education',
     travelDescription: 'Kuala Lumpur, diverse culture, and tropical beauty',
+    visaDescription: 'Student passes, work permits, and Malaysia My Second Home',
     popular: false
   },
   {
@@ -234,6 +259,7 @@ export const countries: Country[] = [
     description: 'Land of smiles and tropical paradise',
     studyDescription: 'Chulalongkorn University and hospitality programs',
     travelDescription: 'Bangkok, beaches, temples, and street food',
+    visaDescription: 'Student visas, work permits, and retirement visas',
     popular: false
   },
   {
@@ -243,6 +269,7 @@ export const countries: Country[] = [
     description: 'Diverse culture and growing economy',
     studyDescription: 'IITs, IIMs, and technology programs',
     travelDescription: 'Taj Mahal, diverse cultures, and spiritual journeys',
+    visaDescription: 'Student visas, work visas, and OCI cards',
     popular: false
   },
   {
@@ -252,6 +279,7 @@ export const countries: Country[] = [
     description: 'Modern oasis in the Middle East',
     studyDescription: 'American University of Sharjah and business programs',
     travelDescription: 'Dubai, Abu Dhabi, luxury, and desert adventures',
+    visaDescription: 'Student visas, work permits, and Golden Visa program',
     popular: false
   },
   {
@@ -261,6 +289,7 @@ export const countries: Country[] = [
     description: 'Rainbow nation with diverse experiences',
     studyDescription: 'University of Cape Town and research programs',
     travelDescription: 'Safari, Cape Town, wine country, and wildlife',
+    visaDescription: 'Study permits, work visas, and critical skills visas',
     popular: false
   },
   {
@@ -270,11 +299,12 @@ export const countries: Country[] = [
     description: 'Vibrant culture and natural wonders',
     studyDescription: 'USP and Portuguese language programs',
     travelDescription: 'Rio, Amazon, beaches, and carnival culture',
+    visaDescription: 'Student visas, work permits, and permanent residence',
     popular: false
   }
 ];
 
-export const getCountriesByCategory = (_category: 'study' | 'travel') => {
+export const getCountriesByCategory = (_category: 'study' | 'travel' | 'visa') => {
   // Sort by popularity first, then alphabetically
   return countries.sort((a, b) => {
     if (a.popular && !b.popular) return -1;

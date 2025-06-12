@@ -35,6 +35,19 @@ const Navbar: React.FC = () => {
     }
   };
 
+  const getUserTypeDisplayName = (userType: string) => {
+    switch (userType) {
+      case 'consultant':
+        return 'Industry Expert';
+      case 'resident':
+        return 'Resident';
+      case 'guest':
+        return 'Guest';
+      default:
+        return 'User';
+    }
+  };
+
   return (
     <>
       <nav className="bg-white/10 backdrop-blur-md shadow-lg border-b border-white/20">
@@ -77,7 +90,7 @@ const Navbar: React.FC = () => {
                       {currentUser.displayName}
                     </div>
                     <div className="text-blue-200 text-sm">
-                      {currentUser.userType.charAt(0).toUpperCase() + currentUser.userType.slice(1)}
+                      {getUserTypeDisplayName(currentUser.userType)}
                     </div>
                   </div>
                 </div>
@@ -86,7 +99,7 @@ const Navbar: React.FC = () => {
                 <div className={`hidden md:flex items-center space-x-2 px-4 py-2 rounded-full ${getUserTypeColor(currentUser.userType)} shadow-lg`}>
                   {getUserTypeIcon(currentUser.userType)}
                   <span className="text-sm font-medium">
-                    {currentUser.userType.charAt(0).toUpperCase() + currentUser.userType.slice(1)}
+                    {getUserTypeDisplayName(currentUser.userType)}
                   </span>
                 </div>
               </div>

@@ -10,7 +10,7 @@ interface AuthContextType {
   login: (email: string, password: string, userType?: 'user' | 'consultant') => Promise<void>;
   signup: (email: string, password: string, displayName: string, mobileNumber: string, userType: 'user' | 'resident') => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  loginAsGuest: (displayName: string) => Promise<void>;
+  loginAsGuest: (displayName: string, email: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
   incrementGuestMessageCount: () => Promise<void>;
@@ -81,12 +81,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const consultantSnapshot = await get(consultantRef);
         
         if (!consultantSnapshot.exists()) {
-          throw new Error('Invalid consultant credentials - Email not found');
+          throw new Error('Invalid Industry Expert credentials - Email not found');
         }
         
         const consultantData = consultantSnapshot.val();
         if (consultantData.password !== password || !consultantData.isActive) {
-          throw new Error('Invalid consultant credentials - Incorrect password or inactive account');
+          throw new Error('Invalid Industry Expert credentials - Incorrect password or inactive account');
         }
       }
 
@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             userType: 'consultant',
             createdAt: new Date().toISOString(),
             // Consultants don't need reasonForJoining as they're here to help
-            reasonForJoining: 'AskAbroad Consultant - Here to help users with their international goals'
+            reasonForJoining: 'AskAbroad Industry Expert - Here to help users with their international goals'
           };
           
           await set(userRef, userData);
@@ -189,12 +189,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginAsGuest = async (displayName: string) => {
+  const loginAsGuest = async (displayName: string, email: string) => {
     try {
+      // Check if guest with this email already exists and has reached limit
+      const existingGuestData = localStorage.getItem(`guestUser_${email}`);
+      if (existingGuestData) {
+        const existingGuest = JSON.parse(existingGuestData);
+        if (existingGuest.messageCount >= 5) {
+          toast.error('You have already used your 5 guest messages with this email. Please sign up to continue.');
+          throw new Error('Guest message limit reached for this email');
+        }
+        
+        // Use existing guest data
+        localStorage.setItem('guestUser', JSON.stringify(existingGuest));
+        setCurrentUser(existingGuest);
+        toast.success(`Welcome back! You have ${5 - existingGuest.messageCount} messages remaining.`);
+        return;
+      }
+
       const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const guestUser: User = {
         uid: guestId,
-        email: '',
+        email: email,
         displayName: displayName,
         userType: 'guest',
         createdAt: new Date().toISOString(),
@@ -202,8 +218,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isGuest: true
       };
 
-      // Store guest user in localStorage
+      // Store guest user in localStorage with email key for tracking
       localStorage.setItem('guestUser', JSON.stringify(guestUser));
+      localStorage.setItem(`guestUser_${email}`, JSON.stringify(guestUser));
       setCurrentUser(guestUser);
       
       toast.success('Welcome as guest! You can send up to 5 messages.');
@@ -222,6 +239,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     localStorage.setItem('guestUser', JSON.stringify(updatedUser));
+    localStorage.setItem(`guestUser_${currentUser.email}`, JSON.stringify(updatedUser));
     setCurrentUser(updatedUser);
   };
 
@@ -233,6 +251,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Update guest user in localStorage
         const updatedUser = { ...currentUser, ...updates };
         localStorage.setItem('guestUser', JSON.stringify(updatedUser));
+        localStorage.setItem(`guestUser_${currentUser.email}`, JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
       } else {
         // Update authenticated user in database

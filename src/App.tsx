@@ -21,7 +21,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function AppContent() {
   const { currentUser } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<'study' | 'travel' | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'study' | 'travel' | 'visa' | null>(null);
 
   // Check if user needs profile setup (skip for consultants and guests)
   const needsProfileSetup = currentUser && 

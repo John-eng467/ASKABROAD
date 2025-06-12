@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Navbar from './Navbar';
 
 interface CountrySelectionProps {
-  category: 'study' | 'travel';
+  category: 'study' | 'travel' | 'visa';
   onBack: () => void;
 }
 
@@ -24,17 +24,25 @@ const CountrySelection: React.FC<CountrySelectionProps> = ({ category, onBack })
       return {
         title: 'Study Abroad Chat Rooms',
         subtitle: 'Choose your dream study destination',
-        description: 'Join live chat rooms with education Industry Expert and current students to get real-time insights about universities, applications, scholarships, and student life.',
+        description: 'Join live chat rooms with education Industry Experts and current students to get real-time insights about universities, applications, scholarships, and student life.',
         icon: '🎓',
         gradient: 'from-blue-500 via-blue-600 to-indigo-600'
       };
-    } else {
+    } else if (category === 'travel') {
       return {
         title: 'Travel Chat Rooms',
         subtitle: 'Explore the world with confidence',
         description: 'Connect with local residents and travel experts in real-time chat rooms for visa guidance, cultural tips, and must-visit recommendations.',
         icon: '✈️',
         gradient: 'from-green-500 via-emerald-600 to-teal-600'
+      };
+    } else {
+      return {
+        title: 'Visa Guidance Chat Rooms',
+        subtitle: 'Get expert visa assistance',
+        description: 'Connect with visa experts and immigration specialists for country-specific guidance on applications, documentation, and processes.',
+        icon: '📋',
+        gradient: 'from-purple-500 via-purple-600 to-pink-600'
       };
     }
   };
@@ -123,7 +131,9 @@ const CountrySelection: React.FC<CountrySelectionProps> = ({ category, onBack })
                       {country.name}
                     </h3>
                     <p className="text-sm text-blue-100 mb-6 leading-relaxed text-center">
-                      {category === 'study' ? country.studyDescription : country.travelDescription}
+                      {category === 'study' ? country.studyDescription : 
+                       category === 'travel' ? country.travelDescription : 
+                       country.visaDescription || 'Expert visa guidance and immigration support'}
                     </p>
 
                     {/* Chat indicator */}
@@ -184,7 +194,9 @@ const CountrySelection: React.FC<CountrySelectionProps> = ({ category, onBack })
                       {country.name}
                     </h3>
                     <p className="text-sm text-blue-100 mb-6 leading-relaxed text-center">
-                      {category === 'study' ? country.studyDescription : country.travelDescription}
+                      {category === 'study' ? country.studyDescription : 
+                       category === 'travel' ? country.travelDescription : 
+                       country.visaDescription || 'Expert visa guidance and immigration support'}
                     </p>
 
                     {/* Chat indicator */}
