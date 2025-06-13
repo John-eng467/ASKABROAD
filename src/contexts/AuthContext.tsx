@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User as FirebaseUser, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { PhoneAuthProvider, signInWithCredential, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { ref, set, get, update } from 'firebase/database';
 import { auth, database } from '../config/firebase';
 import { User } from '../types';
@@ -11,6 +12,8 @@ interface AuthContextType {
   signup: (email: string, password: string, displayName: string, mobileNumber: string, userType: 'user' | 'resident') => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginAsGuest: (displayName: string, email: string) => Promise<void>;
+  sendPhoneVerification: (phoneNumber: string) => Promise<string>;
+  verifyPhoneCode: (verificationId: string, code: string, email: string, password: string, displayName: string, mobileNumber: string, userType: 'user' | 'resident') => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
   incrementGuestMessageCount: () => Promise<void>;
@@ -128,6 +131,77 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast.success('Successfully logged in!');
     } catch (error: any) {
       toast.error(error.message);
+      throw error;
+    }
+  };
+
+  const sendPhoneVerification = async (phoneNumber: string): Promise<string> => {
+    try {
+      // Initialize reCAPTCHA verifier
+      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          // reCAPTCHA solved
+        }
+      });
+
+      // Send verification code
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+      
+      toast.success('Verification code sent to your phone!');
+      return confirmationResult.verificationId;
+    } catch (error: any) {
+      console.error('Phone verification error:', error);
+      toast.error('Failed to send verification code. Please check your phone number.');
+      throw error;
+    }
+  };
+
+  const verifyPhoneCode = async (
+    verificationId: string, 
+    code: string, 
+    email: string, 
+    password: string, 
+    displayName: string, 
+    mobileNumber: string, 
+    userType: 'user' | 'resident'
+  ) => {
+    try {
+      // Create phone credential
+      const credential = PhoneAuthProvider.credential(verificationId, code);
+      
+      // Sign in with phone credential to verify the phone number
+      const phoneResult = await signInWithCredential(auth, credential);
+      
+      // Sign out from phone auth immediately
+      await signOut(auth);
+      
+      // Now create the email/password account
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const userData: User = {
+        uid: user.uid,
+        email: email,
+        displayName: displayName,
+        mobileNumber: mobileNumber,
+        userType: userType,
+        createdAt: new Date().toISOString(),
+        phoneVerified: true // Mark phone as verified
+      };
+
+      await set(ref(database, `users/${user.uid}`), userData);
+      
+      // Clear guest user from localStorage
+      localStorage.removeItem('guestUser');
+      toast.success('Account created successfully with verified phone number!');
+    } catch (error: any) {
+      console.error('Phone verification error:', error);
+      if (error.code === 'auth/invalid-verification-code') {
+        toast.error('Invalid verification code. Please try again.');
+      } else {
+        toast.error('Verification failed. Please try again.');
+      }
       throw error;
     }
   };
@@ -291,6 +365,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signup,
     loginWithGoogle,
     loginAsGuest,
+    sendPhoneVerification,
+    verifyPhoneCode,
     logout,
     updateUserProfile,
     incrementGuestMessageCount,
@@ -300,6 +376,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
+      {/* reCAPTCHA container for phone verification */}
+      <div id="recaptcha-container"></div>
     </AuthContext.Provider>
   );
 };

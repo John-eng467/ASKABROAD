@@ -10,6 +10,7 @@ export interface User {
   createdAt: string;
   messageCount?: number; // For guest users
   isGuest?: boolean;
+  phoneVerified?: boolean; // For 2FA verification
 }
 
 export interface Message {

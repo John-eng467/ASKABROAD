@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Eye, EyeOff, User, Phone, MessageCircle, UserX, Users, Mail } from 'lucide-react';
+import { X, Eye, EyeOff, User, Phone, MessageCircle, UserX, Users, Mail, Shield, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 // Type declarations for Google Identity Services
@@ -26,7 +26,7 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const [authType, setAuthType] = useState<'selection' | 'login' | 'signup' | 'guest'>('selection');
+  const [authType, setAuthType] = useState<'selection' | 'login' | 'signup' | 'guest' | 'verify-phone'>('selection');
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<'user' | 'resident'>('user');
   const [formData, setFormData] = useState({
@@ -35,11 +35,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     displayName: '',
     mobileNumber: '',
     confirmPassword: '',
-    guestEmail: ''
+    guestEmail: '',
+    verificationCode: ''
   });
   const [loading, setLoading] = useState(false);
+  const [verificationId, setVerificationId] = useState<string>('');
+  const [phoneVerificationSent, setPhoneVerificationSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
-  const { login, signup, loginWithGoogle, loginAsGuest } = useAuth();
+  const { login, signup, loginWithGoogle, loginAsGuest, sendPhoneVerification, verifyPhoneCode } = useAuth();
+
+  // Countdown timer for resend verification
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   useEffect(() => {
     // Initialize Google One Tap
@@ -77,21 +90,38 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           throw new Error('Please enter your name and email');
         }
         await loginAsGuest(formData.displayName.trim(), formData.guestEmail.trim());
+        onClose();
       } else if (authType === 'login') {
         await login(formData.email, formData.password, 'user');
+        onClose();
       } else if (authType === 'signup') {
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match');
         }
-        await signup(
-          formData.email, 
-          formData.password, 
-          formData.displayName, 
+        
+        // For signup, first send phone verification
+        const verificationId = await sendPhoneVerification(formData.mobileNumber);
+        setVerificationId(verificationId);
+        setPhoneVerificationSent(true);
+        setAuthType('verify-phone');
+        setCountdown(60); // 60 seconds countdown
+      } else if (authType === 'verify-phone') {
+        if (!formData.verificationCode.trim()) {
+          throw new Error('Please enter the verification code');
+        }
+        
+        // Verify phone code and complete signup
+        await verifyPhoneCode(
+          verificationId,
+          formData.verificationCode,
+          formData.email,
+          formData.password,
+          formData.displayName,
           formData.mobileNumber,
           userType
         );
+        onClose();
       }
-      onClose();
     } catch (error) {
       console.error('Auth error:', error);
     } finally {
@@ -111,6 +141,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (countdown > 0) return;
+    
+    try {
+      setLoading(true);
+      const newVerificationId = await sendPhoneVerification(formData.mobileNumber);
+      setVerificationId(newVerificationId);
+      setCountdown(60);
+    } catch (error) {
+      console.error('Resend verification error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       email: '',
@@ -118,9 +163,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       displayName: '',
       mobileNumber: '',
       confirmPassword: '',
-      guestEmail: ''
+      guestEmail: '',
+      verificationCode: ''
     });
     setUserType('user');
+    setVerificationId('');
+    setPhoneVerificationSent(false);
+    setCountdown(0);
   };
 
   const handleClose = () => {
@@ -130,9 +179,142 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   const goBack = () => {
-    setAuthType('selection');
-    resetForm();
+    if (authType === 'verify-phone') {
+      setAuthType('signup');
+      setPhoneVerificationSent(false);
+      setFormData(prev => ({ ...prev, verificationCode: '' }));
+    } else {
+      setAuthType('selection');
+      resetForm();
+    }
   };
+
+  // Phone Verification Screen
+  if (authType === 'verify-phone') {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+          </div>
+
+          <div className="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-200">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-600 via-blue-600 to-green-600 px-6 py-6">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={goBack}
+                    className="rounded-full p-2 text-white/70 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-white/20 rounded-lg blur-sm"></div>
+                    <div className="relative bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+                      <Shield className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">
+                      Verify Phone Number
+                    </h3>
+                    <p className="text-green-100 text-sm">
+                      Two-factor authentication
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleClose}
+                  className="rounded-full p-2 text-white/70 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white px-6 py-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Info */}
+                <div className="text-center mb-6">
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                    <div className="flex items-center justify-center mb-2">
+                      <Phone className="h-8 w-8 text-green-600" />
+                    </div>
+                    <p className="text-sm text-green-800 font-medium mb-1">
+                      Verification code sent to:
+                    </p>
+                    <p className="text-sm text-green-700">
+                      {formData.mobileNumber}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Enter the 6-digit verification code sent to your phone number to complete your account setup.
+                  </p>
+                </div>
+
+                {/* Verification Code */}
+                <div>
+                  <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-2">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    id="verificationCode"
+                    required
+                    maxLength={6}
+                    value={formData.verificationCode}
+                    onChange={(e) => setFormData({ ...formData, verificationCode: e.target.value.replace(/\D/g, '') })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-center text-2xl font-mono tracking-widest"
+                    placeholder="000000"
+                  />
+                </div>
+
+                {/* Resend Code */}
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={countdown > 0 || loading}
+                    className="text-sm text-green-600 hover:text-green-500 focus:outline-none focus:underline transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend verification code'}
+                  </button>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || formData.verificationCode.length !== 6}
+                  className="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-lg text-base font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <Shield className="h-5 w-5 mr-2" />
+                  )}
+                  {loading ? 'Verifying...' : 'Verify & Create Account'}
+                </button>
+              </form>
+
+              {/* Security Info */}
+              <div className="mt-6 text-center">
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <div className="flex items-center justify-center mb-2">
+                    <Shield className="h-4 w-4 text-blue-600 mr-1" />
+                    <span className="text-sm font-medium text-blue-800">Secure Verification</span>
+                  </div>
+                  <p className="text-xs text-blue-600">
+                    This two-factor authentication helps protect your account and ensures secure access to AskAbroad.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Selection Screen
   if (authType === 'selection') {
@@ -246,7 +428,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     onClick={goBack}
                     className="rounded-full p-2 text-white/70 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
                   >
-                    ←
+                    <ArrowLeft className="h-5 w-5" />
                   </button>
                   <div className="relative">
                     <div className="absolute inset-0 bg-white/20 rounded-lg blur-sm"></div>
@@ -360,7 +542,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   onClick={goBack}
                   className="rounded-full p-2 text-white/70 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
                 >
-                  ←
+                  <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div className="relative">
                   <div className="absolute inset-0 bg-white/20 rounded-lg blur-sm"></div>
@@ -388,6 +570,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
           <div className="bg-white px-6 py-6">
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* 2FA Info for Signup */}
+              {!isLogin && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">
+                      Secure Account Setup
+                    </span>
+                  </div>
+                  <p className="text-xs text-green-600 mt-1">
+                    We'll send a verification code to your phone for enhanced security
+                  </p>
+                </div>
+              )}
+
               {/* User Type Selection - Only for signup */}
               {!isLogin && (
                 <div>
@@ -406,6 +603,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     >
                       <User className="h-6 w-6 mb-2" />
                       <span className="text-sm font-medium">User</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserType('resident')}
+                      className={`flex flex-col items-center p-4 border-2 rounded-xl transition-all duration-200 ${
+                        userType === 'resident'
+                          ? 'border-green-500 bg-green-50 text-green-700 shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Users className="h-6 w-6 mb-2" />
+                      <span className="text-sm font-medium">Resident</span>
                     </button>
                   </div>
                 </div>
@@ -449,6 +658,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       placeholder="+1 (555) 123-4567"
                     />
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Include country code (e.g., +1 for US, +44 for UK)
+                  </p>
                 </div>
               )}
 
@@ -524,9 +736,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                 ) : (
-                  <MessageCircle className="h-5 w-5 mr-2" />
+                  <>
+                    {!isLogin && <Shield className="h-5 w-5 mr-2" />}
+                    <MessageCircle className="h-5 w-5 mr-2" />
+                  </>
                 )}
-                {loading ? 'Please wait...' : (isLogin ? 'Sign In & Chat' : 'Create Account & Chat')}
+                {loading ? 'Please wait...' : (isLogin ? 'Sign In & Chat' : 'Send Verification Code')}
               </button>
 
               {/* Google Sign-in Button */}
