@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, Users, Crown, Globe, MessageSquare, AlertCircle, Reply, X, Sparkles } from 'lucide-react';
+import { Send, ArrowLeft, Users, Crown, Globe, AlertCircle, Reply, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ref, push, onValue, query, orderByChild, startAt, set, remove, onDisconnect } from 'firebase/database';
 import { database } from '../config/firebase';
@@ -18,9 +18,14 @@ const ChatRoom: React.FC = () => {
   const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
+  const [highlightedMessage, setHighlightedMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const country = countries.find(c => c.code === countryCode);
+
+  // Check if current user is a consultant
+  const isConsultant = currentUser?.userType === 'consultant';
 
   useEffect(() => {
     if (!currentUser || !countryCode || !category) return;
@@ -99,9 +104,25 @@ const ChatRoom: React.FC = () => {
     };
   }, [selectedMessage]);
 
+  // Clear highlight after animation
+  useEffect(() => {
+    if (highlightedMessage) {
+      const timer = setTimeout(() => {
+        setHighlightedMessage(null);
+      }, 2000); // Remove highlight after 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedMessage]);
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !currentUser || !countryCode || !category) return;
+
+    // Check if consultant is trying to send a message without replying
+    if (isConsultant && !replyingTo) {
+      return; // Prevent sending message
+    }
 
     // Check guest message limit
     if (currentUser.isGuest) {
@@ -183,6 +204,25 @@ const ChatRoom: React.FC = () => {
     setReplyingTo(null);
   };
 
+  const scrollToMessage = (messageId: string) => {
+    const messageElement = messageRefs.current[messageId];
+    if (messageElement) {
+      // Scroll to the message
+      messageElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      
+      // Highlight the message
+      setHighlightedMessage(messageId);
+    }
+  };
+
+  const handleReplyClick = (replyToId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    scrollToMessage(replyToId);
+  };
+
   const getUserTypeIcon = (userType: string) => {
     switch (userType) {
       case 'consultant':
@@ -252,6 +292,37 @@ const ChatRoom: React.FC = () => {
     return message.senderId === currentUser?.uid;
   };
 
+  // Get input placeholder text based on user type and reply status
+  const getInputPlaceholder = () => {
+    if (isConsultant) {
+      if (replyingTo) {
+        return 'Reply to message...';
+      } else {
+        return 'Select a message to reply to as an Industry Expert...';
+      }
+    }
+    return replyingTo ? 'Reply to message...' : `Type your message in ${getCategoryInfo().title.toLowerCase()}...`;
+  };
+
+  // Check if input should be disabled
+  const isInputDisabled = () => {
+    if (currentUser?.isGuest && (currentUser.messageCount || 0) >= 5) {
+      return true;
+    }
+    if (isConsultant && !replyingTo) {
+      return true;
+    }
+    return false;
+  };
+
+  // Check if send button should be disabled
+  const isSendDisabled = () => {
+    if (!newMessage.trim()) return true;
+    if (currentUser?.isGuest && (currentUser.messageCount || 0) >= 5) return true;
+    if (isConsultant && !replyingTo) return true;
+    return false;
+  };
+
   if (!country) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -283,6 +354,19 @@ const ChatRoom: React.FC = () => {
       <Navbar />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Industry Expert Info Banner */}
+        {isConsultant && (
+          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-300/30 rounded-xl p-4 mb-6">
+            <div className="flex items-center">
+              <Crown className="h-5 w-5 text-purple-300 mr-3" />
+              <p className="text-sm text-purple-100">
+                <span className="font-bold text-purple-200">Industry Expert Mode:</span> You can only send messages by replying to other users' messages. 
+                Select a message and click the reply button to provide your expert guidance.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Guest Message Limit Warning */}
         {currentUser?.isGuest && remainingMessages !== null && remainingMessages <= 2 && (
           <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-300/30 rounded-xl p-4 mb-6">
@@ -353,16 +437,26 @@ const ChatRoom: React.FC = () => {
                       : 'Share experiences, ask questions, and connect with others interested in ' + country.name
                     }
                   </p>
+                  {isConsultant && (
+                    <p className="text-xs text-purple-200 mt-3 italic">
+                      As an Industry Expert, wait for users to post questions and provide your expert guidance by replying to their messages.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
               messages.map((message) => {
                 const isOwn = isOwnMessage(message);
+                const isHighlighted = highlightedMessage === message.id;
                 return (
                   <div
                     key={message.id}
-                    className={`message-container relative group ${selectedMessage === message.id ? 'bg-white/5 rounded-xl p-2' : ''
-                      } ${isOwn ? 'flex justify-end' : 'flex justify-start'}`}
+                    ref={(el) => messageRefs.current[message.id] = el}
+                    className={`message-container relative group transition-all duration-500 ${
+                      selectedMessage === message.id ? 'bg-white/5 rounded-xl p-2' : ''
+                    } ${
+                      isHighlighted ? 'bg-yellow-500/20 rounded-xl p-2 animate-pulse' : ''
+                    } ${isOwn ? 'flex justify-end' : 'flex justify-start'}`}
                     onClick={() => handleMessageClick(message)}
                   >
                     <div className={`max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}`}>
@@ -395,7 +489,10 @@ const ChatRoom: React.FC = () => {
 
                           {/* Reply indicator */}
                           {message.replyTo && (
-                            <div className={`bg-white/10 border-l-4 border-blue-400 pl-4 py-2 mb-3 rounded-r-lg backdrop-blur-sm ${isOwn ? 'border-r-4 border-l-0 pr-4 pl-0 rounded-l-lg rounded-r-none' : ''}`}>
+                            <div 
+                              className={`bg-white/10 border-l-4 border-blue-400 pl-4 py-2 mb-3 rounded-r-lg backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-all duration-200 ${isOwn ? 'border-r-4 border-l-0 pr-4 pl-0 rounded-l-lg rounded-r-none' : ''}`}
+                              onClick={(e) => handleReplyClick(message.replyTo!.id, e)}
+                            >
                               <div className="flex items-center space-x-1 mb-1">
                                 <Reply className="h-3 w-3 text-blue-400" />
                                 <span className="text-xs font-medium text-blue-300">
@@ -463,6 +560,11 @@ const ChatRoom: React.FC = () => {
                   <span className="text-sm font-medium text-blue-200">
                     Replying to {replyingTo.senderName}
                   </span>
+                  {isConsultant && (
+                    <span className="text-xs text-purple-200 bg-purple-500/20 px-2 py-1 rounded-full">
+                      Industry Expert Reply
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={cancelReply}
@@ -486,13 +588,17 @@ const ChatRoom: React.FC = () => {
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder={`${replyingTo ? 'Reply to message...' : `Type your message in ${categoryInfo.title.toLowerCase()}...`}`}
-                className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
-                disabled={currentUser?.isGuest && guestMessageCount >= 5}
+                placeholder={getInputPlaceholder()}
+                className={`flex-1 px-4 py-3 backdrop-blur-sm border rounded-xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 ${
+                  isInputDisabled() 
+                    ? 'bg-white/5 border-white/10 cursor-not-allowed' 
+                    : 'bg-white/10 border-white/20'
+                }`}
+                disabled={isInputDisabled()}
               />
               <button
                 type="submit"
-                disabled={!newMessage.trim() || (currentUser?.isGuest && guestMessageCount >= 5)}
+                disabled={isSendDisabled()}
                 className={`px-6 py-3 bg-gradient-to-r ${categoryInfo.gradient} text-white rounded-xl hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 transform hover:scale-105`}
               >
                 <Send className="h-4 w-4" />
@@ -504,6 +610,7 @@ const ChatRoom: React.FC = () => {
                 <Sparkles className="h-3 w-3 mr-1" />
                 Messages automatically expire after 48 hours to keep conversations fresh and relevant
                 {replyingTo && ' • Click the X above to cancel reply'}
+                {isConsultant && !replyingTo && ' • Select a message to reply to as an Industry Expert'}
               </p>
               {currentUser?.isGuest && (
                 <p className="text-xs text-orange-300 font-medium">
